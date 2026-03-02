@@ -2,74 +2,63 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: #0f0f0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.chat-container {
+    width: 420px;
+    height: 600px;
+    background: #1c1c1c;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
     color: white;
 }
 
-.navbar {
+#chatBox {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.message {
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.user {
+    background: #007bff;
+    align-self: flex-end;
+}
+
+.bot {
+    background: #333;
+    align-self: flex-start;
+}
+
+.input-area {
     display: flex;
-    align-items: center;
-    padding: 10px 20px;
-    background: #202020;
-    position: fixed;
-    width: 100%;
-    top: 0;
 }
 
-.logo {
-    font-size: 22px;
-    font-weight: bold;
-    margin-right: 20px;
-}
-
-.navbar input {
+input {
     flex: 1;
     padding: 10px;
     border-radius: 20px;
     border: none;
 }
 
-.navbar button {
+button {
     margin-left: 10px;
-    padding: 10px 20px;
+    padding: 10px 15px;
     border-radius: 20px;
     border: none;
     background: red;
     color: white;
     cursor: pointer;
-}
-
-.sidebar {
-    width: 200px;
-    background: #181818;
-    height: 100vh;
-    position: fixed;
-    top: 60px;
-    padding-top: 20px;
-}
-
-.sidebar ul {
-    list-style: none;
-    padding: 0;
-}
-
-.sidebar li {
-    padding: 15px;
-    cursor: pointer;
-}
-
-.sidebar li:hover {
-    background: #303030;
-}
-
-.main {
-    margin-left: 200px;
-    margin-top: 60px;
-    height: calc(100vh - 60px);
-}
-
-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: white;
 }
