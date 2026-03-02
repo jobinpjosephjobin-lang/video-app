@@ -2,44 +2,28 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Video App</title>
+    <title>My Video Hub</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- NAVBAR -->
 <header class="navbar">
-    <div class="logo">MyVideo</div>
-    <input type="text" placeholder="Search">
-    <button class="search-btn">Search</button>
+    <div class="logo">MyHub</div>
+    <input type="text" id="urlInput" placeholder="https://www.pornhat.com/popular/">
+    <button onclick="loadURL()">Open</button>
 </header>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
     <ul>
         <li>Home</li>
+        <li>Explore</li>
         <li>Trending</li>
-        <li>Subscriptions</li>
         <li>Library</li>
     </ul>
 </div>
 
-<!-- MAIN CONTENT -->
 <div class="main">
-    <div class="video-grid" id="videoGrid">
-        <!-- Videos will load from JS -->
-    </div>
-</div>
-
-<!-- MODAL PLAYER -->
-<div class="modal" id="videoModal">
-    <div class="modal-content">
-        <span class="close" onclick="closeVideo()">&times;</span>
-        <video id="videoPlayer" controls></video>
-        <a id="downloadBtn" download>
-            <button class="download-btn">Download</button>
-        </a>
-    </div>
+    <iframe id="viewer"></iframe>
 </div>
 
 <script src="script.js"></script>
