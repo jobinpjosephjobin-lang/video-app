@@ -1,64 +1,33 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f0f0f;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+body{
+margin:0;
+background:#0b0f1a;
+font-family:Arial;
+color:white;
 }
 
-.chat-container {
-    width: 420px;
-    height: 600px;
-    background: #1c1c1c;
-    border-radius: 15px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    color: white;
+#title{
+position:absolute;
+z-index:1000;
+width:100%;
+padding:12px;
+background:rgba(0,0,0,0.6);
+text-align:center;
+font-size:22px;
 }
 
-#chatBox {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 15px;
+#map{
+height:100vh;
+width:100%;
 }
 
-.message {
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 10px;
-    max-width: 80%;
+.plane{
+width:26px;
+height:26px;
+animation:float 2s infinite ease-in-out;
 }
 
-.user {
-    background: #007bff;
-    align-self: flex-end;
-}
-
-.bot {
-    background: #333;
-    align-self: flex-start;
-}
-
-.input-area {
-    display: flex;
-}
-
-input {
-    flex: 1;
-    padding: 10px;
-    border-radius: 20px;
-    border: none;
-}
-
-button {
-    margin-left: 10px;
-    padding: 10px 15px;
-    border-radius: 20px;
-    border: none;
-    background: red;
-    color: white;
-    cursor: pointer;
+@keyframes float{
+0%{transform:translateY(0)}
+50%{transform:translateY(-3px)}
+100%{transform:translateY(0)}
 }
