@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="utf-8">
 <title>Live Flight Radar</title>
 
@@ -12,19 +13,21 @@
 
 body{
 margin:0;
+font-family:Arial;
 background:#0b0f1a;
 color:white;
-font-family:Arial;
 }
 
 #title{
 position:absolute;
-z-index:1000;
+top:0;
 width:100%;
-padding:10px;
+z-index:1000;
 text-align:center;
-background:rgba(0,0,0,0.6);
-font-size:20px;
+padding:12px;
+background:rgba(0,0,0,0.7);
+font-size:22px;
+letter-spacing:1px;
 }
 
 #map{
@@ -35,6 +38,13 @@ width:100%;
 .plane{
 width:26px;
 height:26px;
+animation:float 2s infinite ease-in-out;
+}
+
+@keyframes float{
+0%{transform:translateY(0)}
+50%{transform:translateY(-3px)}
+100%{transform:translateY(0)}
 }
 
 </style>
@@ -44,75 +54,102 @@ height:26px;
 <body>
 
 <div id="title">✈ Live Flight Radar</div>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-const map = L.map('map').setView([20,0],3);
+const map = L.map("map").setView([20,0],3);
 
 L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{ maxZoom:19 }
-).addTo(map);
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{
+maxZoom:19
+}).addTo(map);
 
-let planes=[];
+
+let planeMarkers=[];
+
 
 function planeIcon(rotation){
 
 return L.divIcon({
+
 className:"",
+
 html:`<img class="plane"
 src="https://cdn-icons-png.flaticon.com/512/34/34627.png"
 style="transform:rotate(${rotation}deg)">`,
+
 iconSize:[26,26]
+
 });
 
 }
+
+
 
 async function loadFlights(){
 
 try{
 
-const res = await fetch("https://opensky-network.org/api/states/all");
-const data = await res.json();
+const response = await fetch(
+"https://api.allorigins.win/raw?url=https://opensky-network.org/api/states/all"
+);
 
-planes.forEach(p=>map.removeLayer(p));
-planes=[];
+const data = await response.json();
 
-data.states.forEach(f=>{
 
-let lon = f[5];
-let lat = f[6];
+planeMarkers.forEach(m=>map.removeLayer(m));
+planeMarkers=[];
+
+
+data.states.forEach(flight=>{
+
+let lon = flight[5];
+let lat = flight[6];
 
 if(!lat || !lon) return;
 
-let direction = f[10] || 0;
+let altitude = flight[7];
+let velocity = flight[9];
+let direction = flight[10] || 0;
+let callsign = flight[1];
+let country = flight[2];
+
 
 let marker = L.marker(
 [lat,lon],
 {icon:planeIcon(direction)}
 ).addTo(map);
 
+
 marker.bindPopup(
-`<b>Flight:</b> ${f[1] || "Unknown"}<br>
-<b>Country:</b> ${f[2]}<br>
-<b>Altitude:</b> ${f[7] || "N/A"} m<br>
-<b>Speed:</b> ${f[9] || "N/A"} m/s`
+
+`<b>Flight:</b> ${callsign || "Unknown"}<br>
+<b>Country:</b> ${country}<br>
+<b>Altitude:</b> ${altitude || "N/A"} m<br>
+<b>Speed:</b> ${velocity || "N/A"} m/s`
+
 );
 
-planes.push(marker);
+
+planeMarkers.push(marker);
 
 });
 
-}catch(e){
 
-console.log("Flight API error",e);
+}catch(error){
+
+console.log("Flight loading error:",error);
 
 }
 
 }
+
+
 
 function locateUser(){
 
@@ -120,14 +157,14 @@ if(navigator.geolocation){
 
 navigator.geolocation.getCurrentPosition(pos=>{
 
-let lat=pos.coords.latitude;
-let lon=pos.coords.longitude;
+let lat = pos.coords.latitude;
+let lon = pos.coords.longitude;
 
 map.setView([lat,lon],6);
 
 L.marker([lat,lon])
 .addTo(map)
-.bindPopup("Your location")
+.bindPopup("📍 Your Location")
 .openPopup();
 
 });
@@ -135,6 +172,8 @@ L.marker([lat,lon])
 }
 
 }
+
+
 
 loadFlights();
 locateUser();
