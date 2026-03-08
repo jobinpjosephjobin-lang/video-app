@@ -1,24 +1,147 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-<title>Live Flight Tracker</title>
+<meta charset="utf-8">
+<title>Live Flight Radar</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+
+body{
+margin:0;
+background:#0b0f1a;
+color:white;
+font-family:Arial;
+}
+
+#title{
+position:absolute;
+z-index:1000;
+width:100%;
+padding:10px;
+text-align:center;
+background:rgba(0,0,0,0.6);
+font-size:20px;
+}
+
+#map{
+height:100vh;
+width:100%;
+}
+
+.plane{
+width:26px;
+height:26px;
+}
+
+</style>
 
 </head>
 
 <body>
 
 <div id="title">✈ Live Flight Radar</div>
-
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="script.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+const map = L.map('map').setView([20,0],3);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{ maxZoom:19 }
+).addTo(map);
+
+let planes=[];
+
+function planeIcon(rotation){
+
+return L.divIcon({
+className:"",
+html:`<img class="plane"
+src="https://cdn-icons-png.flaticon.com/512/34/34627.png"
+style="transform:rotate(${rotation}deg)">`,
+iconSize:[26,26]
+});
+
+}
+
+async function loadFlights(){
+
+try{
+
+const res = await fetch("https://opensky-network.org/api/states/all");
+const data = await res.json();
+
+planes.forEach(p=>map.removeLayer(p));
+planes=[];
+
+data.states.forEach(f=>{
+
+let lon = f[5];
+let lat = f[6];
+
+if(!lat || !lon) return;
+
+let direction = f[10] || 0;
+
+let marker = L.marker(
+[lat,lon],
+{icon:planeIcon(direction)}
+).addTo(map);
+
+marker.bindPopup(
+`<b>Flight:</b> ${f[1] || "Unknown"}<br>
+<b>Country:</b> ${f[2]}<br>
+<b>Altitude:</b> ${f[7] || "N/A"} m<br>
+<b>Speed:</b> ${f[9] || "N/A"} m/s`
+);
+
+planes.push(marker);
+
+});
+
+}catch(e){
+
+console.log("Flight API error",e);
+
+}
+
+}
+
+function locateUser(){
+
+if(navigator.geolocation){
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+let lat=pos.coords.latitude;
+let lon=pos.coords.longitude;
+
+map.setView([lat,lon],6);
+
+L.marker([lat,lon])
+.addTo(map)
+.bindPopup("Your location")
+.openPopup();
+
+});
+
+}
+
+}
+
+loadFlights();
+locateUser();
+
+setInterval(loadFlights,15000);
+
+</script>
 
 </body>
 </html>
