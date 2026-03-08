@@ -1,43 +1,96 @@
-const API_KEY = "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";
+const API_KEY = "724bac074007bc29092fc265866757b1";
 
-async function sendMessage() {
-    const input = document.getElementById("userInput");
-    const chatBox = document.getElementById("chatBox");
+const map = L.map('map').setView([20,0], 3);
 
-    const message = input.value.trim();
-    if (!message) return;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(map);
 
-    chatBox.innerHTML += `<div class="message user">${message}</div>`;
-    input.value = "";
-    chatBox.scrollTop = chatBox.scrollHeight;
+let planeMarkers = [];
 
-    try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "openai/gpt-3.5-turbo",
-                messages: [
-                    { role: "user", content: message }
-                ]
-            })
-        });
 
-        const data = await response.json();
+/* plane icon */
+function createPlaneIcon(rotation){
 
-        if (data.choices && data.choices.length > 0) {
-            const reply = data.choices[0].message.content;
-            chatBox.innerHTML += `<div class="message bot">${reply}</div>`;
-        } else {
-            chatBox.innerHTML += `<div class="message bot">No response.</div>`;
-        }
-
-    } catch (error) {
-        chatBox.innerHTML += `<div class="message bot">Error connecting to AI.</div>`;
-    }
-
-    chatBox.scrollTop = chatBox.scrollHeight;
+return L.divIcon({
+className:"",
+html:`<img class="plane-icon" 
+style="transform:rotate(${rotation}deg)" 
+src="https://cdn-icons-png.flaticon.com/512/34/34627.png">`,
+iconSize:[30,30]
+});
 }
+
+
+/* get flights */
+
+async function loadFlights(){
+
+const url = `http://api.aviationstack.com/v1/flights?access_key=${API_KEY}`;
+
+const res = await fetch(url);
+const data = await res.json();
+
+planeMarkers.forEach(m=>map.removeLayer(m));
+planeMarkers=[];
+
+data.data.forEach(flight=>{
+
+if(!flight.live) return;
+
+let lat = flight.live.latitude;
+let lon = flight.live.longitude;
+let dir = flight.live.direction || 0;
+
+let marker = L.marker(
+[lat,lon],
+{icon:createPlaneIcon(dir)}
+).addTo(map);
+
+marker.bindPopup(`
+<div class="popup">
+<b>Flight:</b> ${flight.flight.iata || "N/A"}<br>
+<b>Airline:</b> ${flight.airline.name}<br>
+<b>From:</b> ${flight.departure.airport}<br>
+<b>To:</b> ${flight.arrival.airport}<br>
+<b>Altitude:</b> ${flight.live.altitude} ft<br>
+<b>Speed:</b> ${flight.live.speed_horizontal} km/h
+</div>
+`);
+
+planeMarkers.push(marker);
+
+});
+
+}
+
+/* user location */
+
+function locateUser(){
+
+if(navigator.geolocation){
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+let lat = pos.coords.latitude;
+let lon = pos.coords.longitude;
+
+map.setView([lat,lon],6);
+
+L.marker([lat,lon])
+.addTo(map)
+.bindPopup("Your Location")
+.openPopup();
+
+});
+
+}
+
+}
+
+/* refresh every 15 sec */
+
+setInterval(loadFlights,15000);
+
+locateUser();
+loadFlights();
