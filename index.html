@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="utf-8">
-<title>Live Flight Radar</title>
+<title>Flight Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -11,8 +11,8 @@
 
 body{
 margin:0;
-font-family:Arial;
 background:#0b0f1a;
+font-family:Arial;
 }
 
 #map{
@@ -28,10 +28,6 @@ text-align:center;
 background:rgba(0,0,0,0.7);
 color:white;
 font-size:20px;
-}
-
-.plane{
-width:20px;
 }
 
 </style>
@@ -54,19 +50,18 @@ L.tileLayer(
 {maxZoom:18}
 ).addTo(map);
 
-let markers=[];
 
-function planeIcon(rotation){
+/* plane icon image */
 
-return L.divIcon({
-className:"",
-html:`<img class="plane"
-src="https://cdn-icons-png.flaticon.com/512/34/34627.png"
-style="transform:rotate(${rotation}deg)">`,
-iconSize:[20,20]
+const planeIcon = L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+iconSize:[20,20],
+iconAnchor:[10,10]
 });
 
-}
+
+let markers=[];
+
 
 async function loadFlights(){
 
@@ -85,20 +80,18 @@ let count=0;
 
 data.states.forEach(f=>{
 
-if(count>150) return;
+if(count>120) return;
 
 const lon=f[5];
 const lat=f[6];
 
 if(!lat || !lon) return;
 
-/* focus region: asia */
+/* region filter to prevent overload */
 if(lat<5 || lat>45 || lon<50 || lon>120) return;
 
-const dir=f[10] || 0;
-
 let marker=L.marker([lat,lon],{
-icon:planeIcon(dir)
+icon:planeIcon
 }).addTo(map);
 
 marker.bindPopup(
