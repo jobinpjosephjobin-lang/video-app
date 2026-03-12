@@ -1,40 +1,78 @@
-const map = L.map('map',{
-zoomControl:false
-}).setView([20,0],3);
+const map = L.map("map").setView([20,0],3);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:10
+
+
+/* MAP LAYERS */
+
+const normalMap = L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{
+maxZoom:19
+});
+
+const satelliteMap = L.tileLayer(
+"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+{
+maxZoom:19
+});
+
+normalMap.addTo(map);
+
+L.control.layers({
+"Normal Map":normalMap,
+"Satellite":satelliteMap
 }).addTo(map);
+
+
+
+/* PLANE ICON */
 
 const planeIcon = L.icon({
 iconUrl:"plane.png",
-iconSize:[50,50],
-iconAnchor:[25,25]
+iconSize:[60,60],
+iconAnchor:[30,30],
+className:"planeIcon"
 });
 
-let planes={};
 
-async function getFlights(){
 
-let res = await fetch("https://opensky-network.org/api/states/all");
+let planes = {};
 
-let data = await res.json();
 
-data.states.forEach(f =>{
+
+async function fetchFlights(){
+
+try{
+
+let response = await fetch(
+"https://opensky-network.org/api/states/all"
+);
+
+let data = await response.json();
+
+let flights = data.states;
+
+flights.forEach(f=>{
 
 let id = f[0];
-let lat = f[6];
 let lon = f[5];
+let lat = f[6];
 let velocity = f[9];
 let heading = f[10];
 
 if(!lat || !lon) return;
 
+
+
 if(!planes[id]){
 
-let marker = L.marker([lat,lon],{
-icon:planeIcon
-}).addTo(map);
+let marker = L.marker(
+[lat,lon],
+{
+icon:planeIcon,
+rotationAngle: heading || 0
+}
+).addTo(map);
 
 planes[id]={
 marker:marker,
@@ -44,12 +82,11 @@ velocity:velocity,
 heading:heading
 };
 
-}else{
+}
 
-planes[id].velocity = velocity;
-planes[id].heading = heading;
+else{
 
-predictAndAnimate(planes[id],lat,lon);
+animatePlane(planes[id],lat,lon,heading);
 
 }
 
@@ -57,35 +94,62 @@ predictAndAnimate(planes[id],lat,lon);
 
 }
 
-function predictAndAnimate(plane,newLat,newLon){
+catch(e){
+
+console.log("API error",e);
+
+}
+
+}
+
+
+
+function animatePlane(plane,newLat,newLon,newHeading){
 
 let startLat = plane.lat;
 let startLon = plane.lon;
 
-let steps = 30;
-let i = 0;
+let steps = 40;
+let frame = 0;
 
-function animate(){
 
-i++;
 
-let lat = startLat + (newLat-startLat)*(i/steps);
-let lon = startLon + (newLon-startLon)*(i/steps);
+function move(){
+
+frame++;
+
+let lat = startLat + (newLat-startLat)*(frame/steps);
+let lon = startLon + (newLon-startLon)*(frame/steps);
 
 plane.marker.setLatLng([lat,lon]);
 
-if(i<steps){
-requestAnimationFrame(animate);
-}else{
-plane.lat=newLat;
-plane.lon=newLon;
+if(newHeading){
+plane.marker.setRotationAngle(newHeading);
+}
+
+if(frame < steps){
+
+requestAnimationFrame(move);
+
+}
+
+else{
+
+plane.lat = newLat;
+plane.lon = newLon;
+
 }
 
 }
 
-animate();
+move();
+
 }
 
-setInterval(getFlights,5000);
 
-getFlights();
+
+/* REFRESH DATA */
+
+setInterval(fetchFlights,5000);
+
+fetchFlights();
