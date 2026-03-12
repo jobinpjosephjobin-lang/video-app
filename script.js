@@ -2,30 +2,28 @@ const map = L.map("map").setView([20,0],3);
 
 
 
-/* MAP LAYERS */
+/* ---------- MAP LAYERS ---------- */
 
-const normalMap = L.tileLayer(
+const normal = L.tileLayer(
 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{
-maxZoom:19
-});
+{maxZoom:19}
+);
 
-const satelliteMap = L.tileLayer(
+const satellite = L.tileLayer(
 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-{
-maxZoom:19
-});
+{maxZoom:19}
+);
 
-normalMap.addTo(map);
+normal.addTo(map);
 
 L.control.layers({
-"Normal Map":normalMap,
-"Satellite":satelliteMap
+"Normal":normal,
+"Satellite":satellite
 }).addTo(map);
 
 
 
-/* PLANE ICON */
+/* ---------- PLANE ICON ---------- */
 
 const planeIcon = L.icon({
 iconUrl:"plane.png",
@@ -40,25 +38,27 @@ let planes = {};
 
 
 
+/* ---------- FETCH FLIGHT DATA ---------- */
+
 async function fetchFlights(){
 
 try{
 
 let response = await fetch(
-"https://opensky-network.org/api/states/all"
+"https://corsproxy.io/?https://opensky-network.org/api/states/all"
 );
 
 let data = await response.json();
 
-let flights = data.states;
+if(!data.states) return;
 
-flights.forEach(f=>{
+data.states.forEach(f=>{
 
 let id = f[0];
 let lon = f[5];
 let lat = f[6];
-let velocity = f[9];
-let heading = f[10];
+let velocity = f[9] || 0;
+let heading = f[10] || 0;
 
 if(!lat || !lon) return;
 
@@ -70,14 +70,15 @@ let marker = L.marker(
 [lat,lon],
 {
 icon:planeIcon,
-rotationAngle: heading || 0
-}
-).addTo(map);
+rotationAngle:heading
+}).addTo(map);
 
 planes[id]={
 marker:marker,
 lat:lat,
 lon:lon,
+targetLat:lat,
+targetLon:lon,
 velocity:velocity,
 heading:heading
 };
@@ -86,7 +87,10 @@ heading:heading
 
 else{
 
-animatePlane(planes[id],lat,lon,heading);
+planes[id].targetLat = lat;
+planes[id].targetLon = lon;
+planes[id].velocity = velocity;
+planes[id].heading = heading;
 
 }
 
@@ -104,52 +108,34 @@ console.log("API error",e);
 
 
 
-function animatePlane(plane,newLat,newLon,newHeading){
+/* ---------- SMOOTH ANIMATION ENGINE ---------- */
 
-let startLat = plane.lat;
-let startLon = plane.lon;
+function animate(){
 
-let steps = 40;
-let frame = 0;
+Object.values(planes).forEach(p=>{
 
+let dx = p.targetLat - p.lat;
+let dy = p.targetLon - p.lon;
 
+p.lat += dx * 0.02;
+p.lon += dy * 0.02;
 
-function move(){
+p.marker.setLatLng([p.lat,p.lon]);
 
-frame++;
+p.marker.setRotationAngle(p.heading);
 
-let lat = startLat + (newLat-startLat)*(frame/steps);
-let lon = startLon + (newLon-startLon)*(frame/steps);
+});
 
-plane.marker.setLatLng([lat,lon]);
-
-if(newHeading){
-plane.marker.setRotationAngle(newHeading);
-}
-
-if(frame < steps){
-
-requestAnimationFrame(move);
+requestAnimationFrame(animate);
 
 }
 
-else{
-
-plane.lat = newLat;
-plane.lon = newLon;
-
-}
-
-}
-
-move();
-
-}
+animate();
 
 
 
-/* REFRESH DATA */
+/* ---------- UPDATE DATA ---------- */
 
-setInterval(fetchFlights,5000);
+setInterval(fetchFlights,15000);
 
 fetchFlights();
