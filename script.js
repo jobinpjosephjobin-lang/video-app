@@ -1,99 +1,91 @@
-const map = L.map('map').setView([20,0],3);
+const map = L.map('map',{
+zoomControl:false
+}).setView([20,0],3);
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-maxZoom:19
-}
-).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:10
+}).addTo(map);
 
-let aircraftMarkers = [];
-
-function createPlane(rotation){
-
-return L.divIcon({
-
-className:"",
-
-html:`<img 
-class="plane"
-src="https://cdn-icons-png.flaticon.com/512/34/34627.png"
-style="transform:rotate(${rotation}deg)">`,
-
-iconSize:[26,26]
-
+const planeIcon = L.icon({
+iconUrl:"plane.png",
+iconSize:[50,50],
+iconAnchor:[25,25]
 });
 
-}
+let planes={};
 
-async function loadFlights(){
+async function getFlights(){
 
-const response = await fetch(
-"https://opensky-network.org/api/states/all"
-);
+let res = await fetch("https://opensky-network.org/api/states/all");
 
-const data = await response.json();
+let data = await res.json();
 
-aircraftMarkers.forEach(m=>map.removeLayer(m));
-aircraftMarkers=[];
+data.states.forEach(f =>{
 
-data.states.forEach(flight=>{
-
-const lon = flight[5];
-const lat = flight[6];
-const altitude = flight[7];
-const velocity = flight[9];
-const direction = flight[10];
-const callsign = flight[1];
-const country = flight[2];
+let id = f[0];
+let lat = f[6];
+let lon = f[5];
+let velocity = f[9];
+let heading = f[10];
 
 if(!lat || !lon) return;
 
-let marker = L.marker(
-[lat,lon],
-{icon:createPlane(direction || 0)}
-).addTo(map);
+if(!planes[id]){
 
-marker.bindPopup(
+let marker = L.marker([lat,lon],{
+icon:planeIcon
+}).addTo(map);
 
-`
-<b>Flight:</b> ${callsign || "Unknown"}<br>
-<b>Country:</b> ${country}<br>
-<b>Altitude:</b> ${altitude || "N/A"} m<br>
-<b>Speed:</b> ${velocity || "N/A"} m/s
-`
+planes[id]={
+marker:marker,
+lat:lat,
+lon:lon,
+velocity:velocity,
+heading:heading
+};
 
-);
+}else{
 
-aircraftMarkers.push(marker);
+planes[id].velocity = velocity;
+planes[id].heading = heading;
+
+predictAndAnimate(planes[id],lat,lon);
+
+}
 
 });
 
 }
 
-function getUserLocation(){
+function predictAndAnimate(plane,newLat,newLon){
 
-if(navigator.geolocation){
+let startLat = plane.lat;
+let startLon = plane.lon;
 
-navigator.geolocation.getCurrentPosition(pos=>{
+let steps = 30;
+let i = 0;
 
-const lat = pos.coords.latitude;
-const lon = pos.coords.longitude;
+function animate(){
 
-map.setView([lat,lon],6);
+i++;
 
-L.marker([lat,lon])
-.addTo(map)
-.bindPopup("📍 Your Location")
-.openPopup();
+let lat = startLat + (newLat-startLat)*(i/steps);
+let lon = startLon + (newLon-startLon)*(i/steps);
 
-});
+plane.marker.setLatLng([lat,lon]);
 
+if(i<steps){
+requestAnimationFrame(animate);
+}else{
+plane.lat=newLat;
+plane.lon=newLon;
 }
 
 }
 
-loadFlights();
-getUserLocation();
+animate();
+}
 
-setInterval(loadFlights,15000);
+setInterval(getFlights,5000);
+
+getFlights();
