@@ -1,6 +1,7 @@
 body{
 margin:0;
 padding:0;
+overflow:hidden;
 }
 
 #map{
@@ -9,8 +10,12 @@ width:100%;
 background:black;
 }
 
+.leaflet-marker-icon{
+transition: transform 0.1s linear;
+}
+
 .planeIcon{
 width:60px;
 height:60px;
-filter: drop-shadow(0px 0px 6px red);
+filter: drop-shadow(0 0 6px red);
 }
